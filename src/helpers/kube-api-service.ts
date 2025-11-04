@@ -123,7 +123,7 @@ export class KubeApiService {
     this.command.log(`Existing secret ${this.secretName} deleted`)
   }
 
-  async createSecret(secret: Secret, labels?: any): Promise<void> {
+  async createSecret(secret: Secret, labels?: string[]): Promise<void> {
     this.command.log(`Creating secret ${this.secretName}`)
     try {
       await this.coreV1Api.createNamespacedSecret(this.namespace, secret.toKubeSecret(this.secretName, labels))
@@ -133,7 +133,7 @@ export class KubeApiService {
     this.command.log(`Created secret ${this.secretName}`)
   }
 
-  async replaceSecret(secret: Secret, labels?: any): Promise<void> {
+  async replaceSecret(secret: Secret, labels?: string[]): Promise<void> {
     this.command.log(`Replacing secret ${this.secretName}`)
     await this.coreV1Api.replaceNamespacedSecret(
       this.secretName,

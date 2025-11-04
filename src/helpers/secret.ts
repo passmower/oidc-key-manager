@@ -25,7 +25,7 @@ export class Secret {
     this.CookieKeys = [this.#generateCookieKey(32)]
   }
 
-  toKubeSecret(secretName: string, labels?: any): V1Secret {
+  toKubeSecret(secretName: string, labels?: string[]): V1Secret {
     const secret = new V1Secret()
     secret.metadata = this.#getKubeSecretMetadata(secretName, labels)
     secret.data = {}
@@ -93,11 +93,18 @@ export class Secret {
     return b.toString('base64')
   }
 
-  #getKubeSecretMetadata(secretName: string, labels?: any): V1ObjectMeta {
+  #getKubeSecretMetadata(secretName: string, labels?: string[]): V1ObjectMeta {
     const metaData = new V1ObjectMeta()
     metaData.name = secretName
-    if (labels) {
-      metaData.labels = {...labels}
+    if (labels && labels.length > 0) {
+      metaData.labels = {}
+      for (const label of labels) {
+        const [key, ...valueParts] = label.split(':')
+        const value = valueParts.join(':').trim()
+        if (key && value) {
+          metaData.labels[key.trim()] = value
+        }
+      }
     }
     return metaData
   }
