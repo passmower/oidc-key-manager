@@ -59,7 +59,7 @@ export class Secret {
   #append(property: SecretProperties, maxNumber: number, generatorFn: () => any): void {
     if (this[property].length + 1 > maxNumber) {
       this.command.log(`Removing extra ${this[property].length + 1 - maxNumber} ${property}`)
-      this.JWKs.splice(maxNumber - 1)
+      this[property].splice(maxNumber - 1)
     }
 
     this.command.log(`Appending new value to end of ${property}`)

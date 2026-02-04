@@ -62,7 +62,7 @@ export default class Rotate extends Command {
       secret.rotateJWKs()
     }
 
-    if (flags.both || flags.jwks) {
+    if (flags.both || flags['cookie-keys']) {
       secret.rotateCookieKeys()
     }
 
