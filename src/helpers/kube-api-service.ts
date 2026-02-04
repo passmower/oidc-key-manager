@@ -3,9 +3,10 @@ import {
   CoreV1Api,
   KubeConfig,
   makeInformer,
-  PatchUtils, V1Deployment,
+  V1Deployment,
   V1Secret,
 } from '@kubernetes/client-node'
+import * as rx from '@kubernetes/client-node/dist/gen/rxjsStub.js'
 import {CommonFlagsInterface, ConfigType} from './common-flags'
 import {Command} from '@oclif/core'
 import {Secret} from './secret'
@@ -54,10 +55,10 @@ export class KubeApiService {
 
   async restartDeployment(deploymentName: string, timeoutInSeconds: number): Promise<any> {
     this.command.log(`Restarting deployment ${deploymentName}`)
-    await this.appsV1Api.patchNamespacedDeployment(
-      deploymentName,
-      this.namespace,
-      {
+    await this.appsV1Api.patchNamespacedDeployment({
+      name: deploymentName,
+      namespace: this.namespace,
+      body: {
         spec: {
           template: {
             metadata: {
@@ -68,22 +69,24 @@ export class KubeApiService {
           },
         },
       },
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      {headers: {'Content-type': PatchUtils.PATCH_FORMAT_JSON_MERGE_PATCH}},
-    )
-
+    }, {
+      middleware: [{
+        pre(context: any) {
+          context.setHeaderParam('Content-Type', 'application/strategic-merge-patch+json')
+          return rx.of(context)
+        },
+        post(context: any) {
+          return rx.of(context)
+        },
+      }],
+    })
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         informer.stop()
         reject(new Error(`Failed to observe new ReplicaSet before ${timeoutInSeconds} seconds`))
       }, timeoutInSeconds * 1000)
-
       // eslint-disable-next-line unicorn/consistent-function-scoping
-      const listFn = () => this.appsV1Api.listNamespacedDeployment(this.namespace)
+      const listFn = () => this.appsV1Api.listNamespacedDeployment({namespace: this.namespace})
       const informer = makeInformer(this.kc, `/apis/apps/v1/namespaces/${this.namespace}/deployments/`, listFn)
       informer.on('update', (obj: V1Deployment) => {
         const conditions = obj?.status?.conditions
@@ -104,10 +107,12 @@ export class KubeApiService {
 
   async getSecret(): Promise<V1Secret|undefined|null> {
     this.command.log(`Checking if secret ${this.secretName} exists`)
-    const secret = await this.coreV1Api.readNamespacedSecret(this.secretName, this.namespace)
-    .then(response => response.body)
-    .catch(error => {
-      if (error.statusCode !== 404) {
+    const secret = await this.coreV1Api.readNamespacedSecret({
+      name: this.secretName,
+      namespace: this.namespace,
+    })
+    .catch((error: any) => {
+      if (error.statusCode !== 404 && error.code !== 404 && error.response?.statusCode !== 404) {
         this.command.error(error)
       }
 
@@ -119,14 +124,20 @@ export class KubeApiService {
 
   async deleteSecret(): Promise<void> {
     this.command.log(`Deleting existing secret ${this.secretName}`)
-    await this.coreV1Api.deleteNamespacedSecret(this.secretName, this.namespace).then(() => true)
+    await this.coreV1Api.deleteNamespacedSecret({
+      name: this.secretName,
+      namespace: this.namespace,
+    }).then(() => true)
     this.command.log(`Existing secret ${this.secretName} deleted`)
   }
 
   async createSecret(secret: Secret, labels?: string[]): Promise<void> {
     this.command.log(`Creating secret ${this.secretName}`)
     try {
-      await this.coreV1Api.createNamespacedSecret(this.namespace, secret.toKubeSecret(this.secretName, labels))
+      await this.coreV1Api.createNamespacedSecret({
+        namespace: this.namespace,
+        body: secret.toKubeSecret(this.secretName, labels),
+      })
     } catch (error) {
       console.error(error)
     }
@@ -135,10 +146,10 @@ export class KubeApiService {
 
   async replaceSecret(secret: Secret, labels?: string[]): Promise<void> {
     this.command.log(`Replacing secret ${this.secretName}`)
-    await this.coreV1Api.replaceNamespacedSecret(
-      this.secretName,
-      this.namespace,
-      secret.toKubeSecret(this.secretName, labels),
-    )
+    await this.coreV1Api.replaceNamespacedSecret({
+      name: this.secretName,
+      namespace: this.namespace,
+      body: secret.toKubeSecret(this.secretName, labels),
+    })
   }
 }
