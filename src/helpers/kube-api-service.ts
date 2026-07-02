@@ -10,6 +10,7 @@ import * as rx from '@kubernetes/client-node/dist/gen/rxjsStub.js'
 import {CommonFlagsInterface, ConfigType} from './common-flags'
 import {Command} from '@oclif/core'
 import {Secret} from './secret'
+import {apiServerUrlViaServiceDns} from './kube-api-server-url'
 
 const Undefined = 'undefined'
 
@@ -24,7 +25,22 @@ export class KubeApiService {
   constructor(command: Command, flags: CommonFlagsInterface) {
     this.command = command
     this.kc = new KubeConfig()
-    flags.config === ConfigType.InCluster ? this.kc.loadFromCluster() : this.kc.loadFromDefault()
+    if (flags.config === ConfigType.InCluster) {
+      this.kc.loadFromCluster()
+      // Must run before makeApiClient(), which captures cluster.server eagerly.
+      const dnsServer = apiServerUrlViaServiceDns()
+      if (dnsServer) {
+        const cluster = this.kc.getCurrentCluster()
+        if (cluster) {
+          this.command.log(`Kubernetes: using service DNS for the API server to avoid IPv6 TLS SAN mismatch (${cluster.server} -> ${dnsServer})`)
+          // Cluster.server is readonly, so rebuild the entry rather than mutate it.
+          this.kc.clusters = this.kc.clusters.map(c => (c.name === cluster.name ? {...c, server: dnsServer} : c))
+        }
+      }
+    } else {
+      this.kc.loadFromDefault()
+    }
+
     this.namespace = flags.namespace ?? this.kc.getContextObject(this.kc.getCurrentContext())?.namespace ?? Undefined
     this.coreV1Api = this.kc.makeApiClient(CoreV1Api)
     this.appsV1Api = this.kc.makeApiClient(AppsV1Api)
