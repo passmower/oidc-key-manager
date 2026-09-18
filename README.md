@@ -14,7 +14,7 @@ $ npm install -g @passmower/oidc-key-manager
 $ key-manager COMMAND
 running command...
 $ key-manager (--version)
-@passmower/oidc-key-manager/1.2.2 linux-x64 node-v22.22.2
+@passmower/oidc-key-manager/1.2.3 linux-x64 node-v22.22.2
 $ key-manager --help [COMMAND]
 USAGE
   $ key-manager COMMAND
@@ -60,7 +60,7 @@ EXAMPLES
   $ key-manager initialize --additional-label "app.kubernetes.io/instance: passmower"
 ```
 
-_See code: [src/commands/initialize.ts](https://github.com/passmower/oidc-key-manager/blob/v1.2.2/src/commands/initialize.ts)_
+_See code: [src/commands/initialize.ts](https://github.com/passmower/oidc-key-manager/blob/v1.2.3/src/commands/initialize.ts)_
 
 ## `key-manager rotate`
 
@@ -93,5 +93,5 @@ EXAMPLES
   $ key-manager rotate
 ```
 
-_See code: [src/commands/rotate.ts](https://github.com/passmower/oidc-key-manager/blob/v1.2.2/src/commands/rotate.ts)_
+_See code: [src/commands/rotate.ts](https://github.com/passmower/oidc-key-manager/blob/v1.2.3/src/commands/rotate.ts)_
 <!-- commandsstop -->
