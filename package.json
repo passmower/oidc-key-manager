@@ -31,10 +31,9 @@
     "@types/node": "^25.2.0",
     "@types/ws": "^8.18.1",
     "chai": "^5.1.0",
-    "eslint": "^9.19.0",
+    "eslint": "^9.39.5",
     "eslint-config-oclif": "^6.0.137",
-    "eslint-config-oclif-typescript": "^3.1.14",
-    "mocha": "^11.3.0",
+    "mocha": "^12.0.2",
     "oclif": "^4.22.73",
     "shx": "^0.4.0",
     "ts-node": "^10.9.2",
@@ -54,7 +53,7 @@
   },
   "scripts": {
     "build": "shx rm -rf dist && tsc -b",
-    "lint": "eslint . --ext .ts --config .eslintrc",
+    "lint": "eslint .",
     "postpack": "shx rm -f oclif.manifest.json",
     "posttest": "npm run lint",
     "prepack": "npm run build && oclif manifest && oclif readme",
@@ -62,7 +61,7 @@
     "version": "oclif readme && git add README.md"
   },
   "engines": {
-    "node": ">=12.0.0"
+    "node": ">=18.0.0"
   },
   "bugs": "https://github.com/passmower/oidc-key-manager/issues",
   "types": "dist/index.d.ts"

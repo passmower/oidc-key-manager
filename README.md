@@ -32,7 +32,7 @@ Initialize the secret with initial keys
 
 ```
 USAGE
-  $ key-manager initialize -c local|cluster [--json] [-n <value>] [-s <value>] [-l <value>...] [--recreate]
+  $ key-manager initialize -c local|cluster [--json] [-l <value>...] [-n <value>] [-s <value>] [--recreate]
 
 FLAGS
   -c, --config=<option>             (required) use local or in-cluster Kubernetes config
@@ -68,9 +68,9 @@ Append new JWK|cookie key|both and rotate the array, optionally restarting the d
 
 ```
 USAGE
-  $ key-manager rotate -c local|cluster [-n <value>] [-s <value>] [-l <value>...] [--both] [--jwks]
-    [--cookie-keys] [--max-number-of-jwks <value>] [--max-number-of-cookie-keys <value>] [--restart-deployment-backoff
-    <value> --restart-deployment <value>]
+  $ key-manager rotate -c local|cluster [-l <value>...] [-n <value>] [-s <value>] [--both] [--cookie-keys]
+    [--jwks] [--max-number-of-cookie-keys <value>] [--max-number-of-jwks <value>] [--restart-deployment-backoff <value>
+    --restart-deployment <value>]
 
 FLAGS
   -c, --config=<option>                     (required) use local or in-cluster Kubernetes config

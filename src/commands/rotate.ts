@@ -1,27 +1,25 @@
 import {Command, Flags} from '@oclif/core'
+
 import commonFlags from '../helpers/common-flags'
 import {KubeApiService} from '../helpers/kube-api-service'
 import {Secret} from '../helpers/secret'
 
 export default class Rotate extends Command {
+  static args = {}
   static description = 'Append new JWK|cookie key|both and rotate the array, optionally restarting the deployment'
-
   static examples = [
     '<%= config.bin %> <%= command.id %>',
   ]
-
   static flags = {
     ...commonFlags,
     both: Flags.boolean({description: 'rotate both JWKs and cookie keys', exactlyOne: ['both', 'jwks', 'cookie-keys']}),
-    jwks: Flags.boolean({description: 'rotate JWKs'}),
     'cookie-keys': Flags.boolean({description: 'rotate cookie keys'}),
-    'max-number-of-jwks': Flags.integer({default: 3}),
+    jwks: Flags.boolean({description: 'rotate JWKs'}),
     'max-number-of-cookie-keys': Flags.integer({default: 3}),
+    'max-number-of-jwks': Flags.integer({default: 3}),
     'restart-deployment': Flags.string({description: 'Kubernetes deployment name to restart while rotating'}),
-    'restart-deployment-backoff': Flags.integer({description: 'Seconds to wait for deployment to restart', default: 60, dependsOn: ['restart-deployment']}),
+    'restart-deployment-backoff': Flags.integer({default: 60, dependsOn: ['restart-deployment'], description: 'Seconds to wait for deployment to restart'}),
   }
-
-  static args = {}
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(Rotate)

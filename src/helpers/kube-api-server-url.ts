@@ -14,9 +14,9 @@ import net from 'node:net'
 // disables it. Returns the replacement server URL, or null to leave it as-is.
 export function apiServerUrlViaServiceDns({
   host = process.env.KUBERNETES_SERVICE_HOST,
-  port = process.env.KUBERNETES_SERVICE_PORT,
   mode = process.env.KUBERNETES_API_SERVICE_DNS ?? 'auto',
-}: {host?: string; port?: string; mode?: string} = {}): string | null {
+  port = process.env.KUBERNETES_SERVICE_PORT,
+}: {host?: string; mode?: string; port?: string;} = {}): null | string {
   if (!host || mode === 'never') {
     return null
   }

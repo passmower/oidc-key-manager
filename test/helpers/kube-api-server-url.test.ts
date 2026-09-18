@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+
 import {apiServerUrlViaServiceDns} from '../../src/helpers/kube-api-server-url'
 
 // loadFromCluster() connects to the bare KUBERNETES_SERVICE_HOST, which on IPv6
@@ -21,11 +22,11 @@ describe('apiServerUrlViaServiceDns — IPv6 API server TLS SAN workaround', () 
   })
 
   it('never: disables the rewrite even on IPv6', () => {
-    assert.equal(apiServerUrlViaServiceDns({host: 'fd00::1', port: '443', mode: 'never'}), null)
+    assert.equal(apiServerUrlViaServiceDns({host: 'fd00::1', mode: 'never', port: '443'}), null)
   })
 
   it('always: forces the rewrite even on IPv4', () => {
-    assert.equal(apiServerUrlViaServiceDns({host: '10.96.0.1', port: '443', mode: 'always'}), 'https://kubernetes.default.svc:443')
+    assert.equal(apiServerUrlViaServiceDns({host: '10.96.0.1', mode: 'always', port: '443'}), 'https://kubernetes.default.svc:443')
   })
 
   it('preserves the port and picks http for the plain-text API ports', () => {

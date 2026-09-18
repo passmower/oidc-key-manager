@@ -3,24 +3,35 @@ import {
   CoreV1Api,
   KubeConfig,
   makeInformer,
+  RequestContext,
+  ResponseContext,
   V1Deployment,
   V1Secret,
 } from '@kubernetes/client-node'
 import * as rx from '@kubernetes/client-node/dist/gen/rxjsStub.js'
-import {CommonFlagsInterface, ConfigType} from './common-flags'
 import {Command} from '@oclif/core'
-import {Secret} from './secret'
+
+import {CommonFlagsInterface, ConfigType} from './common-flags'
 import {apiServerUrlViaServiceDns} from './kube-api-server-url'
+import {Secret} from './secret'
 
 const Undefined = 'undefined'
 
+// The Kubernetes client surfaces the HTTP status on different properties
+// depending on which layer raised the error, so probe all of them.
+type KubeApiError = Error & {
+  code?: number
+  response?: {statusCode?: number}
+  statusCode?: number
+}
+
 export class KubeApiService {
-  private kc: KubeConfig
-  private coreV1Api: CoreV1Api
   private appsV1Api: AppsV1Api
-  private namespace: string
   private command: Command
-  private secretName: any
+  private coreV1Api: CoreV1Api
+  private kc: KubeConfig
+  private namespace: string
+  private secretName: string
 
   constructor(command: Command, flags: CommonFlagsInterface) {
     this.command = command
@@ -48,32 +59,66 @@ export class KubeApiService {
     this.#validate()
   }
 
-  #validate(): void {
-    if (this.namespace === Undefined) {
-      this.command.error(
-        'namespace is undefined',
-        {
-          suggestions: [
-            'set namespace with -n',
-            'configure service account for this deployment/job',
-          ],
-        })
+  async createSecret(secret: Secret, labels?: string[]): Promise<void> {
+    this.command.log(`Creating secret ${this.secretName}`)
+    try {
+      await this.coreV1Api.createNamespacedSecret({
+        body: secret.toKubeSecret(this.secretName, labels),
+        namespace: this.namespace,
+      })
+    } catch (error) {
+      console.error(error)
     }
+
+    this.command.log(`Created secret ${this.secretName}`)
+  }
+
+  async deleteSecret(): Promise<void> {
+    this.command.log(`Deleting existing secret ${this.secretName}`)
+    await this.coreV1Api.deleteNamespacedSecret({
+      name: this.secretName,
+      namespace: this.namespace,
+    }).then(() => true)
+    this.command.log(`Existing secret ${this.secretName} deleted`)
+  }
+
+  async getSecret(): Promise<null | undefined | V1Secret> {
+    this.command.log(`Checking if secret ${this.secretName} exists`)
+    const secret = await this.coreV1Api.readNamespacedSecret({
+      name: this.secretName,
+      namespace: this.namespace,
+    })
+    .catch((error: KubeApiError) => {
+      if (error.statusCode !== 404 && error.code !== 404 && error.response?.statusCode !== 404) {
+        this.command.error(error)
+      }
+
+      return null
+    })
+    this.command.log(secret ? `Secret ${this.secretName} exists` : `Secret ${this.secretName} does not exist`)
+    return secret
   }
 
   printConfiguration(): void {
     this.command.log('Using Kubernetes parameters:', {
       ...this.kc.getContextObject(this.kc.getCurrentContext()),
-      server: this.kc.getCurrentCluster()?.server,
       secretName: this.secretName,
+      server: this.kc.getCurrentCluster()?.server,
     })
   }
 
-  async restartDeployment(deploymentName: string, timeoutInSeconds: number): Promise<any> {
+  async replaceSecret(secret: Secret, labels?: string[]): Promise<void> {
+    this.command.log(`Replacing secret ${this.secretName}`)
+    await this.coreV1Api.replaceNamespacedSecret({
+      body: secret.toKubeSecret(this.secretName, labels),
+      name: this.secretName,
+      namespace: this.namespace,
+    })
+  }
+
+  async restartDeployment(deploymentName: string, timeoutInSeconds: number): Promise<V1Deployment> {
     this.command.log(`Restarting deployment ${deploymentName}`)
     await this.appsV1Api.patchNamespacedDeployment({
-      name: deploymentName,
-      namespace: this.namespace,
       body: {
         spec: {
           template: {
@@ -85,18 +130,20 @@ export class KubeApiService {
           },
         },
       },
+      name: deploymentName,
+      namespace: this.namespace,
     }, {
       middleware: [{
-        pre(context: any) {
-          context.setHeaderParam('Content-Type', 'application/strategic-merge-patch+json')
+        post(context: ResponseContext) {
           return rx.of(context)
         },
-        post(context: any) {
+        pre(context: RequestContext) {
+          context.setHeaderParam('Content-Type', 'application/strategic-merge-patch+json')
           return rx.of(context)
         },
       }],
     })
-    return new Promise((resolve, reject) => {
+    return new Promise<V1Deployment>((resolve, reject) => {
       const timeout = setTimeout(() => {
         informer.stop()
         reject(new Error(`Failed to observe new ReplicaSet before ${timeoutInSeconds} seconds`))
@@ -107,7 +154,7 @@ export class KubeApiService {
       informer.on('update', (obj: V1Deployment) => {
         const conditions = obj?.status?.conditions
         if (conditions && obj?.metadata?.name === deploymentName) {
-          const progressingCondition = conditions.find((c: any) => c.type === 'Progressing')
+          const progressingCondition = conditions.find(c => c.type === 'Progressing')
           if (progressingCondition?.reason === 'NewReplicaSetAvailable') {
             this.command.log('Deployment finished restarting')
             clearTimeout(timeout)
@@ -121,51 +168,17 @@ export class KubeApiService {
     })
   }
 
-  async getSecret(): Promise<V1Secret|undefined|null> {
-    this.command.log(`Checking if secret ${this.secretName} exists`)
-    const secret = await this.coreV1Api.readNamespacedSecret({
-      name: this.secretName,
-      namespace: this.namespace,
-    })
-    .catch((error: any) => {
-      if (error.statusCode !== 404 && error.code !== 404 && error.response?.statusCode !== 404) {
-        this.command.error(error)
-      }
-
-      return null
-    })
-    this.command.log(secret ? `Secret ${this.secretName} exists` : `Secret ${this.secretName} does not exist`)
-    return secret
-  }
-
-  async deleteSecret(): Promise<void> {
-    this.command.log(`Deleting existing secret ${this.secretName}`)
-    await this.coreV1Api.deleteNamespacedSecret({
-      name: this.secretName,
-      namespace: this.namespace,
-    }).then(() => true)
-    this.command.log(`Existing secret ${this.secretName} deleted`)
-  }
-
-  async createSecret(secret: Secret, labels?: string[]): Promise<void> {
-    this.command.log(`Creating secret ${this.secretName}`)
-    try {
-      await this.coreV1Api.createNamespacedSecret({
-        namespace: this.namespace,
-        body: secret.toKubeSecret(this.secretName, labels),
-      })
-    } catch (error) {
-      console.error(error)
+  #validate(): void {
+    if (this.namespace === Undefined) {
+      this.command.error(
+        'namespace is undefined',
+        {
+          suggestions: [
+            'set namespace with -n',
+            'configure service account for this deployment/job',
+          ],
+        },
+      )
     }
-    this.command.log(`Created secret ${this.secretName}`)
-  }
-
-  async replaceSecret(secret: Secret, labels?: string[]): Promise<void> {
-    this.command.log(`Replacing secret ${this.secretName}`)
-    await this.coreV1Api.replaceNamespacedSecret({
-      name: this.secretName,
-      namespace: this.namespace,
-      body: secret.toKubeSecret(this.secretName, labels),
-    })
   }
 }
