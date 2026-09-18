@@ -16,7 +16,22 @@ updates:
       prefix: fix(deps)
       # no release for dev-deps
       prefix-development: chore(dev-deps)
+    # Majors are held back for runtime dependencies only: a breaking change
+    # there ships to users, while dev-tooling is covered by the test suite.
+    # Blocking dev majors as well is what left mocha on a vulnerable
+    # serialize-javascript/diff until it had to be bumped by hand.
+    # Keep this list in sync with "dependencies" in package.json.
     ignore:
       - dependency-name: '@salesforce/dev-scripts'
-      - dependency-name: '*'
+      - dependency-name: '@kubernetes/client-node'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@oclif/core'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@oclif/plugin-help'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@oclif/plugin-plugins'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@types/jsrsasign'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'jsrsasign'
         update-types: ['version-update:semver-major']
