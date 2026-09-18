@@ -1,15 +1,15 @@
 {
-  "name": "@codemowers/oidc-key-manager",
+  "name": "@passmower/oidc-key-manager",
   "version": "1.2.1",
   "description": "CLI to manage secret keys required by oidc-gateway",
   "author": "Erki Aas",
   "bin": {
     "key-manager": "./bin/run"
   },
-  "homepage": "https://github.com/codemowers/oidc-key-manager",
+  "homepage": "https://github.com/passmower/oidc-key-manager",
   "license": "MIT",
   "main": "dist/index.js",
-  "repository": "codemowers/oidc-key-manager",
+  "repository": "passmower/oidc-key-manager",
   "files": [
     "/bin",
     "/dist",
@@ -64,6 +64,6 @@
   "engines": {
     "node": ">=12.0.0"
   },
-  "bugs": "https://github.com/codemowers/oidc-key-manager/issues",
+  "bugs": "https://github.com/passmower/oidc-key-manager/issues",
   "types": "dist/index.d.ts"
 }
