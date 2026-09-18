@@ -25,7 +25,7 @@
     "jsrsasign": "^11.1.0"
   },
   "devDependencies": {
-    "@oclif/test": "^4.1.16",
+    "@oclif/test": "^4.2.0",
     "@types/chai": "^5.2.3",
     "@types/mocha": "^10.0.10",
     "@types/node": "^25.2.0",
