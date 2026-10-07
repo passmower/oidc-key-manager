@@ -6,6 +6,7 @@ CLI to manage secret keys required by oidc-gateway
 <!-- toc -->
 * [Usage](#usage)
 * [Commands](#commands)
+* [License](#license)
 <!-- tocstop -->
 # Usage
 <!-- usage -->
@@ -95,3 +96,8 @@ EXAMPLES
 
 _See code: [src/commands/rotate.ts](https://github.com/passmower/oidc-key-manager/blob/v1.2.5/src/commands/rotate.ts)_
 <!-- commandsstop -->
+
+# License
+
+oidc-key-manager is licensed under the [Apache License 2.0](LICENSE).
+Third-party dependencies retain their respective licenses.

@@ -7,7 +7,7 @@
     "key-manager": "./bin/run"
   },
   "homepage": "https://github.com/passmower/oidc-key-manager",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "main": "dist/index.js",
   "repository": "passmower/oidc-key-manager",
   "files": [
